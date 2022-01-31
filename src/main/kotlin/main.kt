@@ -19,10 +19,12 @@ fun listenCommand() {
                 "hide" -> showRecord = false
                 "save" -> saveRecord()
                 "new" -> logNewRecord()
+                "exit" -> active = false
                 else -> println("无效指令 $it")
             }
         }
     }
+    println("指令进程已停止")
 }
 
 fun logNewRecord() {
@@ -49,6 +51,7 @@ fun listenProcess() {
             }
             sleep(1000)
         }
+        println("监听进程已停止")
     }.start()
 }
 
