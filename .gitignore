@@ -28,3 +28,4 @@ hs_err_pid*
 .gradle/7.0.2/vcsMetadata-1/
 .idea/
 build/
+/.gradle/
