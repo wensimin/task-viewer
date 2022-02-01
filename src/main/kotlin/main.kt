@@ -1,12 +1,8 @@
-import java.lang.Thread.sleep
 import java.nio.charset.Charset
 
 var active = true
-var currentProcess = emptyList<ProcessRecord>()
-var showRecord = false
-var quickRecord = emptyList<ProcessRecord>()
+var recordProcess = mutableMapOf<String, MutableList<ProcessRecord>>()
 fun main() {
-    listenProcess()
     listenCommand()
 }
 
@@ -15,9 +11,8 @@ fun listenCommand() {
         println("请输入指令")
         readLine().let {
             when (it) {
-                "show" -> showRecord = true
-                "hide" -> showRecord = false
-                "save" -> saveRecord()
+                "show" -> logProcess()
+                "add" -> addRecord()
                 "new" -> logNewRecord()
                 "exit" -> active = false
                 else -> println("无效指令 $it")
@@ -27,43 +22,36 @@ fun listenCommand() {
     println("指令进程已停止")
 }
 
+fun logProcess() {
+    findNowProcess().forEach { (k, e) ->
+        println("name $k, pid ${e.joinToString(",") { it.pid }}")
+    }
+}
+
+
 fun logNewRecord() {
-    (currentProcess - quickRecord).forEach { println("new process $it") }
-}
-
-fun saveRecord() {
-    quickRecord = currentProcess
-    println("saved")
-}
-
-fun listenProcess() {
-    Thread {
-        while (active) {
-            val newProcess = findCurrentProcess()
-            val exitedProcess = currentProcess - newProcess
-            val startedProcess = newProcess - currentProcess
-            currentProcess = newProcess
-            if (showRecord) {
-                println("now process count: ${currentProcess.size}")
-                println("exited count ${exitedProcess.size} started count ${startedProcess.size}")
-                exitedProcess.forEach { println("exit $it") }
-                startedProcess.forEach { println("start $it") }
-            }
-            sleep(1000)
+    findNowProcess().let { nowProcess ->
+        (nowProcess.keys - recordProcess.keys).forEach { k ->
+            println("new process name :$k pid ${nowProcess[k]!!.joinToString(",") { it.pid }}")
         }
-        println("监听进程已停止")
-    }.start()
+    }
+
+}
+
+fun addRecord() {
+    recordProcess += findNowProcess()
+    println("added, all count ${recordProcess.size}")
 }
 
 
-fun findCurrentProcess(): List<ProcessRecord> {
+fun findNowProcess(): MutableMap<String, MutableList<ProcessRecord>> {
     val taskString =
         Runtime.getRuntime().exec("tasklist").inputStream.bufferedReader(Charset.forName("GBK")).use { it.readText() }
             .trim()
-
-    return taskString.split("\n").let {
+    val rs = mutableMapOf<String, MutableList<ProcessRecord>>()
+    taskString.split("\n").let {
         it.subList(3, it.size)
-    }.map {
+    }.forEach {
         it.split("\\s{2,}".toRegex()).let { process ->
             if (process.size != 4) {
                 println("$process error")
@@ -74,7 +62,13 @@ fun findCurrentProcess(): List<ProcessRecord> {
             }
             val pid = pidAndSessionName[0]
             val sessionName = pidAndSessionName[1]
-            ProcessRecord(pid, process[0], sessionName, process[2], process[3].trim())
+            val name = process[0]
+            if (rs[name] == null) {
+                rs[name] = mutableListOf(ProcessRecord(pid, name, sessionName, process[2], process[3].trim()))
+            } else {
+                rs[name]!!.add(ProcessRecord(pid, name, sessionName, process[2], process[3].trim()))
+            }
         }
-    }.toList()
+    }
+    return rs
 }
