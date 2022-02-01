@@ -25,7 +25,6 @@
 hs_err_pid*
 
 .gitignore
-.gradle/7.0.2/vcsMetadata-1/
 .idea/
 build/
-/.gradle/
+.gradle/
