@@ -1,5 +1,5 @@
 import java.lang.Thread.sleep
-import kotlin.streams.toList
+import java.nio.charset.Charset
 
 var active = true
 var currentProcess = emptyList<ProcessRecord>()
@@ -55,14 +55,26 @@ fun listenProcess() {
     }.start()
 }
 
+
 fun findCurrentProcess(): List<ProcessRecord> {
-    return ProcessHandle.allProcesses().map {
-        ProcessRecord(
-            it.pid(),
-            it.info().command().orElse(null),
-            it.parent().map(ProcessHandle::pid).orElse(null),
-            it.info().user().orElse(null),
-            it.info().startInstant().orElse(null)
-        )
+    val taskString =
+        Runtime.getRuntime().exec("tasklist").inputStream.bufferedReader(Charset.forName("GBK")).use { it.readText() }
+            .trim()
+
+    return taskString.split("\n").let {
+        it.subList(3, it.size)
+    }.map {
+        it.split("\\s{2,}".toRegex()).let { process ->
+            if (process.size != 4) {
+                println("$process error")
+            }
+            val pidAndSessionName = process[1].split("\\s".toRegex())
+            if (pidAndSessionName.size != 2) {
+                println("$pidAndSessionName error")
+            }
+            val pid = pidAndSessionName[0]
+            val sessionName = pidAndSessionName[1]
+            ProcessRecord(pid, process[0], sessionName, process[2], process[3].trim())
+        }
     }.toList()
 }

@@ -1,9 +1,7 @@
-import java.time.Instant
-
 data class ProcessRecord(
-    val pid: Long,
-    val command: String?,
-    val parent: Long?,
-    val user: String?,
-    val startInstant: Instant?
+    val pid: String,
+    val name: String,
+    val sessionName: String,
+    val session: String,
+    val memory: String
 )
